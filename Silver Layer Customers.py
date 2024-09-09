@@ -1,73 +1,94 @@
 # Databricks notebook source
-from pyspark.sql.functions import *
+# MAGIC %md
+# MAGIC ##### 1. Load customers data from the bronze layer into the silver layer and implement Slowly Changing Dimension (SCD) Type 2 on the customers data.
 
 # COMMAND ----------
 
 from delta.tables import DeltaTable
+from pyspark.sql.functions import col, lit, date_format, current_timestamp, to_utc_timestamp, xxhash64
 
 timestamp_format = "yyyy-MM-dd HH:mm:ss.SSS"
 dummy_timestamp = "9999-12-31 23:59:59"
-tables_list=[]
-tables=spark.catalog.listTables("silver_catalog.customers_db")
-for table in tables:
-    tables_list.append(table.name)
-print(tables_list)
-if "customers_scd" not in tables_list:
-    df = (spark.read.format("delta").table("bronze_catalog.customers_db.customers_raw")
-               .filter("CustomerID is not null")
-               .dropDuplicates()
-               .withColumn("load_time", to_utc_timestamp(col("load_time"), "UTC"))
-               .selectExpr("CustomerID as customer_id", "CustomerName as customer_name", "load_time")
-                .withColumn("effective_date", date_format(current_timestamp(), timestamp_format))
-                .withColumn("expiration_date", date_format(lit(dummy_timestamp), timestamp_format))
-                .withColumn("is_current", lit(True))
-        )
-    display(df)
-    df.write.format("delta").saveAsTable("silver_catalog.customers_db.customers_scd")
-else:
-    print("Not initial load")
-    targetTable = DeltaTable.forName(spark, "silver_catalog.customers_db.customers_scd")
-    targetDF=targetTable.toDF()
-#     display(targetDF)
 
-    sourceDF = (spark.read.format("delta").table("bronze_catalog.customers_db.customers_raw")
-                .filter("CustomerID is not null")
-               .dropDuplicates()
-               .withColumn("load_time", to_utc_timestamp(col("load_time"), "UTC"))
-               .selectExpr("CustomerID as customer_id", "CustomerName as customer_name", "load_time"))
-#     display(sourceDF)
+def table_exists(db_name, table_name):
+    tables = spark.catalog.listTables(db_name)
+    table_names = [table.name for table in tables]
+    return table_name in table_names
 
-    joinDF = sourceDF.join(targetDF, (sourceDF.customer_id == targetDF.customer_id) & (targetDF.is_current == True), "left")\
-    .select(sourceDF["*"],\
-        targetDF.customer_id.alias("target_customer_id"),\
-            targetDF.customer_name.alias("target_customer_name"))
-#     display(joinDF)
+def load_source_data():
+    return (spark.read.format("delta").table("bronze_catalog.customers_db.customers_raw")
+            .filter("CustomerID is not null")
+            .dropDuplicates()
+            .withColumn("load_time", to_utc_timestamp(col("load_time"), "UTC"))
+            .selectExpr("CustomerID as customer_id", "CustomerName as customer_name", "load_time"))
 
-    filterDF = joinDF.filter(xxhash64(joinDF.customer_id,joinDF.customer_name) != xxhash64(joinDF.target_customer_id,joinDF.target_customer_name))
-#     display(filterDF)
+def create_initial_scd(df):
+    return (df
+            .withColumn("effective_date", date_format(current_timestamp(), timestamp_format))
+            .withColumn("expiration_date", date_format(lit(dummy_timestamp), timestamp_format))
+            .withColumn("is_current", lit(True))
+            .withColumn("load_time", to_utc_timestamp(col("load_time"), "UTC"))
+            .select("customer_id", "customer_name", "load_time", "effective_date", "expiration_date", "is_current"))
 
-    mergeDF = filterDF.withColumn("MERGEKEY", xxhash64(filterDF.customer_id))
-#     display(mergeDF)
+def merge_scd_table(source_df, target_table_name):
+    target_table = DeltaTable.forName(spark, target_table_name)
+    target_df = target_table.toDF()
 
-    dummyDF = filterDF.filter("target_customer_id IS NOT NULL").withColumn("MERGEKEY", lit(None))
-#     display(dummyDF)
+    join_df = source_df.join(
+        target_df, 
+        (source_df.customer_id == target_df.customer_id) & (target_df.is_current == True), 
+        "left"
+    ).select(
+        source_df["*"],
+        target_df.customer_id.alias("target_customer_id"),
+        target_df.customer_name.alias("target_customer_name")
+    )
 
-    scdDF = mergeDF.union(dummyDF)
-#     display(scdDF)
+    filter_df = join_df.filter(
+        xxhash64(join_df.customer_id, join_df.customer_name) != xxhash64(join_df.target_customer_id, join_df.target_customer_name)
+    )
 
-    targetTable.alias("target").merge(
-    source = scdDF.alias("source"),
-    condition = "xxhash64(target.customer_id) == source.MERGEKEY and target.is_current == 'True'").whenMatchedUpdate(set =
-    {
-        "target.is_current": "'False'",
-        "target.expiration_date": "current_timestamp"
-    }
-    ).whenNotMatchedInsert(values=
-    {
-        "target.customer_id": "source.customer_id",
-        "target.customer_name": "source.customer_name",
-        "target.load_time": "source.load_time",
-        "target.is_current": "true",
-        "target.effective_date": "current_timestamp",
-        "target.expiration_date": "'9999-12-31 23:59:59'"
-    }).execute()
+    merge_df = filter_df.withColumn("MERGEKEY", xxhash64(filter_df.customer_id))
+
+    dummy_df = filter_df.filter("target_customer_id IS NOT NULL").withColumn("MERGEKEY", lit(None))
+
+    scd_df = merge_df.union(dummy_df)
+
+    target_table.alias("target").merge(
+        source=scd_df.alias("source"),
+        condition="xxhash64(target.customer_id) == source.MERGEKEY and target.is_current == 'True'"
+    ).whenMatchedUpdate(
+        set={
+            "target.is_current": "'False'",
+            "target.expiration_date": "current_timestamp"
+        }
+    ).whenNotMatchedInsert(
+        values={
+            "target.customer_id": "source.customer_id",
+            "target.customer_name": "source.customer_name",
+            "target.load_time": "source.load_time",
+            "target.is_current": "true",
+            "target.effective_date": "current_timestamp",
+            "target.expiration_date": "'9999-12-31 23:59:59'"
+        }
+    ).execute()
+
+def main():
+    if not table_exists("silver_catalog.customers_db", "customers_scd"):
+        print("Initial load")
+        source_df = load_source_data()
+        initial_scd_df = create_initial_scd(source_df)
+        initial_scd_df.write.format("delta").saveAsTable("silver_catalog.customers_db.customers_scd")
+    else:
+        print("Not initial load")
+        source_df = load_source_data()
+        merge_scd_table(source_df, "silver_catalog.customers_db.customers_scd")
+
+if __name__ == "__main__":
+    main()
+
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from silver_catalog.customers_db.customers_scd;

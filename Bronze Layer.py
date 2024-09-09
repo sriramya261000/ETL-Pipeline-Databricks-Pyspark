@@ -1,8 +1,10 @@
 # Databricks notebook source
-from pyspark.sql.functions import *
+# MAGIC %md
+# MAGIC ##### 1. Load raw data from landing zone to bronze layer using auto loader
 
 # COMMAND ----------
 
+from pyspark.sql.functions import *
 
 def data_ingestion(input_path: str, checkpoint_location: str, table_name: str):
 
@@ -50,3 +52,13 @@ invoices_query = data_ingestion(invoices_input_path, invoices_checkpoint_locatio
 print(invoices_query)
 
 # .option("cloudFiles.schemaHints", "InvoiceNo string, CustomerID string")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from bronze_catalog.customers_db.customers_raw;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from bronze_catalog.invoices_db.invoices_raw;
