@@ -24,7 +24,7 @@ The ETL workflow involves processing data from GCS in Databricks and storing it 
 
 **Solution Architecture**
 
-
+![Architecture](https://github.com/user-attachments/assets/afb00f63-0582-44fc-b3b6-12b6918b6307)
 
 **Workflow**
 
