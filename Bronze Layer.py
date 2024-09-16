@@ -52,13 +52,3 @@ invoices_query = data_ingestion(invoices_input_path, invoices_checkpoint_locatio
 print(invoices_query)
 
 # .option("cloudFiles.schemaHints", "InvoiceNo string, CustomerID string")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from bronze_catalog.customers_db.customers_raw;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from bronze_catalog.invoices_db.invoices_raw;

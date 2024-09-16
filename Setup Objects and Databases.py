@@ -9,10 +9,6 @@
 # MAGIC CREATE CATALOG IF NOT EXISTS dev MANAGED LOCATION 'gs://databricks-2944430982339670-unitycatalog/2944430982339670';
 # MAGIC CREATE DATABASE IF NOT EXISTS dev.demo_db;
 # MAGIC
-# MAGIC CREATE EXTERNAL LOCATION IF NOT EXISTS external_data
-# MAGIC URL 'gs://databricks-storage-bucket-external/data_files'
-# MAGIC WITH (CREDENTIAL `databricks-external-location`);
-# MAGIC
 # MAGIC CREATE EXTERNAL VOLUME IF NOT EXISTS dev.demo_db.landing_zone
 # MAGIC LOCATION 'gs://databricks-storage-bucket-external/data_files';
 # MAGIC
@@ -94,3 +90,8 @@
 # MAGIC
 # MAGIC DROP TABLE gold_catalog.sales_db.sales;
 # MAGIC
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC Select * from gold_catalog.sales_db.sales

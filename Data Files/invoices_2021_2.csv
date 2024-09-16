@@ -1,0 +1,3 @@
+InvoiceNo,StockCode,Description,Quantity,InvoiceDate,UnitPrice,CustomerID,Country
+536398,85123A,WHITE HANGING HEART T-LIGHT HOLDER,6,01-01-2021 8.26,2.55,18041,United Kingdom
+536398,22752,SET 7 BABUSHKA NESTING BOXES,2,09-05-2021 9.32,7.65,18041,United Kingdom

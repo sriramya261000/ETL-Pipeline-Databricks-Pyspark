@@ -19,20 +19,20 @@ def join_invoices_customers(invoices_df, customers_df):
     Join invoices data with customers data on customer_id.
     """
     return (invoices_df.join(customers_df, invoices_df.customer_id == customers_df.customer_id, "left")
-            .select(invoices_df["*"], customers_df["customer_name"]))
+            .select(invoices_df["*"], customers_df["customer_name"], customers_df["email"], customers_df["ip_address"], customers_df["gender"],customers_df["ssn"]))
     
 def aggregations(join_df):
     """
     Aggregate the joined data to create a gold layer table
 
     """
-    return (join_df.groupBy("country", "customer_id", "customer_name", "invoice_year", "invoice_month", "invoice_date")
+    return (join_df.groupBy("country", "customer_id", "customer_name","email","ip_address","gender","ssn","invoice_year", "invoice_month", "invoice_date")
             .agg(
                 F.sum(F.expr("quantity * unit_price")).alias("TotalAmount"),
                 F.sum("quantity").alias("TotalQuantity"))
             .withColumn("TotalAmount", F.round(F.col("TotalAmount"), 2))
             .orderBy("customer_id", "invoice_year", "invoice_month")
-            .select("country", "customer_id", "customer_name", "invoice_year", "invoice_month", "invoice_date", "TotalQuantity", "TotalAmount"))
+            .select("country", "customer_id", "customer_name", "email","ip_address","gender","ssn","invoice_year", "invoice_month", "invoice_date", "TotalQuantity", "TotalAmount"))
 
 def write_data_to_table(df, table_name):
     """
@@ -49,6 +49,7 @@ output_table = "gold_catalog.sales_db.sales"
 
 customers_df = read_customers_data(customers_table)
 invoices_df = read_invoices_data(invoices_table)
+# display(customers_df)
 
 joined_df = join_invoices_customers(invoices_df, customers_df)
 # display(joined_df)
