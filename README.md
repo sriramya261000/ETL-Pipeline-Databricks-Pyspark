@@ -2,13 +2,13 @@
 
 > The Medallion Architecture is implemented using Databricks to manage data across different layers through distinct catalogs by implementing the simple ETL pipeline. The data is initially ingested from Google Cloud Storage as CSV files and written into Delta Lake tables as bronze (raw) data. This data is then processed through a series of transformations to enrich and aggregate it into silver and gold layers for advanced analytics and reporting.
 
-**Catalogs Overview**
-
-- **Bronze Catalog:** Contains raw, unprocessed data.
-
-- **Silver Catalog:** Holds cleaned and enriched data with preliminary transformations.
-
-- **Gold Catalog:** Used for highly refined, analytical data optimized for business intelligence and reporting.
+> **Catalogs Overview**
+> 
+> - **Bronze Catalog:** Contains raw, unprocessed data.
+> 
+> - **Silver Catalog:** Holds cleaned and enriched data with preliminary transformations.
+> 
+> - **Gold Catalog:** Used for highly refined, analytical data optimized for business intelligence and reporting.
 
 **Use Case**
 
