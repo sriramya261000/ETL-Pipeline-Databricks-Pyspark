@@ -12,16 +12,16 @@
 
 **Use Case**
 
-**Objective:** Analysts aim to understand how sales performance varies by customer demographics and geographic regions over time. This analysis enables businesses to identify trends, high-performing regions, and customer preferences, facilitating targeted marketing and sales strategies.
-
-**Data Sources:**
-
-- **Tables Used:** customers and invoices
-
-- **Data Location:** Google Cloud Storage (GCS)
-
-The ETL workflow involves processing data from GCS in Databricks and storing it in Delta Lake. Visualizations can be performed within Databricks or connected to other BI tools via Databricks Partner Connect.
-
+> **Objective:** Analysts aim to understand how sales performance varies by customer demographics and geographic regions over time. This analysis enables businesses to identify trends, high-performing regions, and customer preferences, facilitating targeted marketing and sales strategies.
+> 
+> **Data Sources:**
+> 
+> - **Tables Used:** customers and invoices
+> 
+> - **Data Location:** Google Cloud Storage (GCS)
+> 
+> The ETL workflow involves processing data from GCS in Databricks and storing it in Delta Lake. Visualizations can be performed within Databricks or connected to other BI tools via Databricks Partner Connect.
+> 
 **Solution Architecture**
 
 ![Architecture](https://github.com/user-attachments/assets/afb00f63-0582-44fc-b3b6-12b6918b6307)
