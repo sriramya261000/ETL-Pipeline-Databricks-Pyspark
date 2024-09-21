@@ -24,7 +24,7 @@
 > 
 **Solution Architecture**
 
-![Architecture](https://github.com/user-attachments/assets/afb00f63-0582-44fc-b3b6-12b6918b6307)
+![Architecture("C:\Users\admin\Downloads\Architecture.png")
 
 **Workflow**
 
